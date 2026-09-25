@@ -5,7 +5,7 @@
       <span class="absolute left-3 top-2 text-cyan-500 font-bold text-lg">/</span>
       <input
         v-model="localPattern"
-        @input="onInput"
+        @input="onPatternInput"
         @keyup.enter="execute"
         type="text"
         placeholder="输入正则表达式..."
@@ -26,25 +26,32 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, watch } from 'vue'
 import { useRegexStore } from '../store/regex'
 
 const store = useRegexStore()
 const localPattern = ref(store.pattern)
 const localTestString = ref(store.testString)
 
-let debounceTimer: ReturnType<typeof setTimeout>
-function onInput() {
-  clearTimeout(debounceTimer)
-  debounceTimer = setTimeout(() => { store.setPattern(localPattern.value) }, 300)
+// 模板库等“另一个入口”改写 store 后，输入框必须同步，不保留旧值/旧路径
+watch(() => store.pattern, v => { localPattern.value = v })
+watch(() => store.testString, v => { localTestString.value = v })
+
+let patternTimer: ReturnType<typeof setTimeout> | undefined
+let testTimer: ReturnType<typeof setTimeout> | undefined
+
+function onPatternInput() {
+  clearTimeout(patternTimer)
+  patternTimer = setTimeout(() => { store.setPattern(localPattern.value) }, 300)
 }
 function onTestInput() {
-  clearTimeout(debounceTimer)
-  debounceTimer = setTimeout(() => { store.setTestString(localTestString.value) }, 300)
+  clearTimeout(testTimer)
+  testTimer = setTimeout(() => { store.setTestString(localTestString.value) }, 300)
 }
 function execute() {
-  store.setPattern(localPattern.value)
-  store.setTestString(localTestString.value)
-  store.execute()
+  clearTimeout(patternTimer)
+  clearTimeout(testTimer)
+  // 单一执行入口，避免 setPattern/setTestString 各跑一次造成布局与统计重复
+  store.applyInput(localPattern.value, localTestString.value)
 }
 </script>

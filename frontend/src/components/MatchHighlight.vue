@@ -1,7 +1,7 @@
 <template>
   <div class="bg-slate-800 rounded-lg p-4 border border-slate-700">
     <h3 class="text-sm font-bold text-slate-400 mb-3">匹配结果高亮</h3>
-    <div v-if="store.error" class="text-red-400 text-sm">解析错误</div>
+    <div v-if="store.error" class="text-red-400 text-sm">解析错误（已保留上一张有效图）</div>
     <div v-else-if="store.matchHighlight" class="bg-slate-900 rounded-lg p-4 font-mono text-sm overflow-x-auto">
       <span class="text-slate-500">{{ store.matchHighlight.before }}</span>
       <span class="bg-green-600 text-white px-1 rounded">{{ store.matchHighlight.match }}</span>
@@ -26,9 +26,10 @@
       <div class="space-y-1 max-h-32 overflow-y-auto">
         <div v-for="step in recentSteps" :key="step.stepIndex"
           class="text-xs font-mono px-2 py-1 rounded"
-          :class="step.isBacktrack ? 'bg-orange-900 text-orange-300' : step.stepIndex === store.currentStep ? 'bg-cyan-900 text-cyan-300' : 'bg-slate-900 text-slate-400'">
+          :class="step.isBacktrack ? 'bg-orange-900 text-orange-300' : step.stepIndex === store.currentStep ? 'bg-cyan-900 text-cyan-300 ring-1 ring-orange-400' : 'bg-slate-900 text-slate-400'">
           [{{ step.stepIndex }}] '{{ step.char }}' → 状态{{ step.currentState}}→{{ step.nextState }} ({{ step.transition }}){{ step.isBacktrack ? ' ⚠回溯' : '' }}
         </div>
+        <div v-if="recentSteps.length === 0" class="text-xs text-slate-600 font-mono px-2 py-1">无激活路径（已重置/播放结束）</div>
       </div>
     </div>
   </div>
@@ -39,8 +40,9 @@ import { computed } from 'vue'
 import { useRegexStore } from '../store/regex'
 
 const store = useRegexStore()
+// 与画布完全相同的口径：currentStep === -1 时不保留任何旧路径
 const recentSteps = computed(() => {
-  if (!store.matchResult) return []
+  if (!store.matchResult || store.currentStep < 0) return []
   const end = store.currentStep + 1
   return store.matchResult.steps.slice(Math.max(0, end - 5), end)
 })

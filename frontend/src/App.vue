@@ -32,25 +32,25 @@
         <div class="bg-slate-800 rounded-lg p-4 border border-slate-700">
           <h3 class="text-sm font-bold text-slate-400 mb-3">逐步控制</h3>
           <div class="flex flex-wrap items-center gap-2 mb-3">
-            <button @click="store.stepBackward" :disabled="store.currentStep === 0" class="px-3 py-1 bg-slate-700 hover:bg-slate-600 disabled:opacity-30 rounded text-sm">⏮ 上一步</button>
-            <button v-if="!store.isPlaying" @click="store.play" class="px-3 py-1 bg-cyan-600 hover:bg-cyan-500 rounded text-sm">▶ 播放</button>
+            <button @click="store.stepBackward" :disabled="store.currentStep <= 0" class="px-3 py-1 bg-slate-700 hover:bg-slate-600 disabled:opacity-30 rounded text-sm">⏮ 上一步</button>
+            <button v-if="!store.isPlaying" @click="store.play" :disabled="!hasPlayableSteps" class="px-3 py-1 bg-cyan-600 hover:bg-cyan-500 disabled:opacity-30 rounded text-sm">▶ 播放</button>
             <button v-else @click="store.stop" class="px-3 py-1 bg-red-600 hover:bg-red-500 rounded text-sm">⏸ 停止</button>
-            <button @click="store.stepForward" :disabled="!store.matchResult || store.currentStep >= store.matchResult.steps.length - 1" class="px-3 py-1 bg-slate-700 hover:bg-slate-600 disabled:opacity-30 rounded text-sm">下一步 ⏭</button>
-            <button @click="store.resetStep" class="px-3 py-1 bg-slate-700 hover:bg-slate-600 rounded text-sm">⟲ 重置</button>
+            <button @click="store.stepForward" :disabled="!hasPlayableSteps || store.currentStep >= store.stepCount - 1" class="px-3 py-1 bg-slate-700 hover:bg-slate-600 disabled:opacity-30 rounded text-sm">下一步 ⏭</button>
+            <button @click="store.resetStep" :disabled="store.currentStep < 0" class="px-3 py-1 bg-slate-700 hover:bg-slate-600 disabled:opacity-30 rounded text-sm">⟲ 重置</button>
           </div>
-          <div class="text-sm text-slate-400">步骤: {{ store.currentStep }} / {{ store.matchResult?.steps.length || 0 }}</div>
+          <div class="text-sm text-slate-400">步骤: {{ store.currentStep < 0 ? '–' : store.currentStep }} / {{ store.stepCount }}</div>
         </div>
 
         <div class="bg-slate-800 rounded-lg p-4 border border-slate-700">
           <h3 class="text-sm font-bold text-slate-400 mb-3">当前步骤详情</h3>
-          <div v-if="store.matchResult && store.matchResult.steps[store.currentStep]" class="space-y-1 text-sm">
-            <div>字符索引: <span class="text-cyan-400">{{ store.matchResult.steps[store.currentStep].charIndex }}</span></div>
-            <div>当前字符: <span class="text-yellow-400 font-mono">'{{ store.matchResult.steps[store.currentStep].char }}'</span></div>
-            <div>状态转换: <span class="text-green-400">{{ store.matchResult.steps[store.currentStep].currentState }}</span> → <span class="text-blue-400">{{ store.matchResult.steps[store.currentStep].nextState }}</span></div>
-            <div>转移符号: <span class="text-purple-400 font-mono">{{ store.matchResult.steps[store.currentStep].transition }}</span></div>
-            <div v-if="store.matchResult.steps[store.currentStep].isBacktrack" class="text-orange-400 font-bold">⚠ 回溯发生</div>
+          <div v-if="currentStepData" class="space-y-1 text-sm">
+            <div>字符索引: <span class="text-cyan-400">{{ currentStepData.charIndex }}</span></div>
+            <div>当前字符: <span class="text-yellow-400 font-mono">'{{ currentStepData.char }}'</span></div>
+            <div>状态转换: <span class="text-green-400">{{ currentStepData.currentState }}</span> → <span class="text-blue-400">{{ currentStepData.nextState }}</span></div>
+            <div>转移符号: <span class="text-purple-400 font-mono">{{ currentStepData.transition }}</span></div>
+            <div v-if="currentStepData.isBacktrack" class="text-orange-400 font-bold">⚠ 回溯发生</div>
           </div>
-          <div v-else class="text-slate-500 text-sm">无步骤数据</div>
+          <div v-else class="text-slate-500 text-sm">无激活路径（初始/重置/播放结束）</div>
         </div>
       </div>
     </div>
@@ -58,7 +58,7 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted } from 'vue'
+import { computed, onMounted } from 'vue'
 import { useRegexStore } from './store/regex'
 import RegexEditor from './components/RegexEditor.vue'
 import NfaVisualizer from './components/NfaVisualizer.vue'
@@ -67,4 +67,10 @@ import TemplateLibrary from './components/TemplateLibrary.vue'
 
 const store = useRegexStore()
 onMounted(() => store.execute())
+
+const hasPlayableSteps = computed(() => store.matchResult?.matched === true && store.stepCount > 0)
+const currentStepData = computed(() => {
+  if (!store.matchResult || store.currentStep < 0) return null
+  return store.matchResult.steps[store.currentStep] ?? null
+})
 </script>
