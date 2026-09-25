@@ -26,12 +26,16 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, watch } from 'vue'
 import { useRegexStore } from '../store/regex'
 
 const store = useRegexStore()
 const localPattern = ref(store.pattern)
 const localTestString = ref(store.testString)
+
+// 另一个入口（模板库等）改动 store 后，编辑器输入框同步，不再保留旧值
+watch(() => store.pattern, v => { localPattern.value = v })
+watch(() => store.testString, v => { localTestString.value = v })
 
 let debounceTimer: ReturnType<typeof setTimeout>
 function onInput() {
@@ -42,9 +46,8 @@ function onTestInput() {
   clearTimeout(debounceTimer)
   debounceTimer = setTimeout(() => { store.setTestString(localTestString.value) }, 300)
 }
+// 按钮与回车：两个输入一次性提交，只执行一次，避免布局与统计重复计算
 function execute() {
-  store.setPattern(localPattern.value)
-  store.setTestString(localTestString.value)
-  store.execute()
+  store.updateInputs(localPattern.value, localTestString.value)
 }
 </script>

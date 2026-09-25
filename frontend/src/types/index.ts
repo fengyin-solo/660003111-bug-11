@@ -20,6 +20,12 @@ export interface NFA {
   acceptStates: number[]
 }
 
+export interface StepEdge {
+  from: number
+  to: number
+  symbol: string | null // null = epsilon
+}
+
 export interface MatchStep {
   stepIndex: number
   charIndex: number
@@ -29,6 +35,7 @@ export interface MatchStep {
   transition: string
   isBacktrack: boolean
   isMatch: boolean
+  edgePath: StepEdge[] // 该步骤实际经过的边：符号边 + ε 闭包链
 }
 
 export interface MatchResult {

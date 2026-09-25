@@ -21,7 +21,7 @@
       </div>
     </div>
 
-    <div v-if="store.matchResult && store.matchResult.steps.length > 0" class="mt-4">
+    <div v-if="store.matchResult && store.matchResult.matched && store.currentStep >= 0" class="mt-4">
       <h4 class="text-xs font-bold text-slate-500 mb-2">执行步骤 (最近5步)</h4>
       <div class="space-y-1 max-h-32 overflow-y-auto">
         <div v-for="step in recentSteps" :key="step.stepIndex"
